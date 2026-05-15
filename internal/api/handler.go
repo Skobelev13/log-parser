@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"log-parser/internal/parser"
 	"log-parser/internal/storage"
 )
 
@@ -17,18 +18,6 @@ func ParseHandler(w http.ResponseWriter, r *http.Request) {
 	response := map[string]interface{}{
 		"status": "accepted",
 		"path":   "data/test.log",
-		"lines": []map[string]string{
-			{
-				"name": "switch-1",
-				"ip":   "10.0.0.1",
-				"port": "eth0",
-			},
-			{
-				"name": "host-1",
-				"ip":   "10.0.0.2",
-				"port": "eth1",
-			},
-		},
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -36,20 +25,30 @@ func ParseHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func ParseCSVHandler(w http.ResponseWriter, r *http.Request) {
-	links, err := linkRepo.GetLinks()
-
+	links, err := parser.ParseCSV("data/ibdiagnet2.db_csv")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
+	err = linkRepo.SaveLinks(links)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	response := map[string]interface{}{
+		"status": "saved",
+		"count":  len(links),
+		"links":  links,
+	}
+
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(links)
+	json.NewEncoder(w).Encode(response)
 }
 
 func GetLinksHandler(w http.ResponseWriter, r *http.Request) {
 	links, err := linkRepo.GetLinks()
-
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
