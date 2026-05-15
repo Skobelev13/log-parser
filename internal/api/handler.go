@@ -4,63 +4,57 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"log-parser/internal/service"
+	"log-parser/internal/storage"
 )
 
-type ParseRequest struct {
-	Path string `json:"path"`
+var linkRepo *storage.LinkRepository
+
+func Init(repo *storage.LinkRepository) {
+	linkRepo = repo
 }
 
-var parserService = service.NewParserService()
-
 func ParseHandler(w http.ResponseWriter, r *http.Request) {
-	var req ParseRequest
-
-	err := json.NewDecoder(r.Body).Decode(&req)
-	if err != nil {
-		http.Error(w, "bad request", http.StatusBadRequest)
-		return
-	}
-
-	lines, err := parserService.Parse(req.Path)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	resp := map[string]interface{}{
+	response := map[string]interface{}{
 		"status": "accepted",
-		"path":   req.Path,
-		"lines":  lines,
+		"path":   "data/test.log",
+		"lines": []map[string]string{
+			{
+				"name": "switch-1",
+				"ip":   "10.0.0.1",
+				"port": "eth0",
+			},
+			{
+				"name": "host-1",
+				"ip":   "10.0.0.2",
+				"port": "eth1",
+			},
+		},
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-
-	encoder := json.NewEncoder(w)
-	encoder.SetIndent("", "  ")
-
-	err = encoder.Encode(resp)
-	if err != nil {
-		http.Error(w, "failed to encode response", http.StatusInternalServerError)
-		return
-	}
+	json.NewEncoder(w).Encode(response)
 }
 
 func ParseCSVHandler(w http.ResponseWriter, r *http.Request) {
-	links, err := parserService.ParseCSV("data/ibdiagnet2.db_csv")
+	links, err := linkRepo.GetLinks()
+
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(links)
+}
 
-	encoder := json.NewEncoder(w)
-	encoder.SetIndent("", "  ")
+func GetLinksHandler(w http.ResponseWriter, r *http.Request) {
+	links, err := linkRepo.GetLinks()
 
-	err = encoder.Encode(links)
 	if err != nil {
-		http.Error(w, "failed to encode response", http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(links)
 }
