@@ -23,22 +23,45 @@ func ParseCSV(path string) ([]model.Link, error) {
 	}
 
 	var links []model.Link
+	seen := make(map[string]bool)
 
 	for _, row := range rows {
 		if len(row) < 3 {
 			continue
 		}
 
-		if row[0] == "NodeGUID" ||
-			row[0] == "NodeGuid" ||
-			row[0] == "NodeDesc" {
+		switchName := row[0]
+		port := row[1]
+		peer := row[2]
+
+		if switchName == "NodeGUID" ||
+			switchName == "NodeGuid" ||
+			switchName == "NodeDesc" {
 			continue
 		}
 
+		if switchName == "" || port == "" || peer == "" {
+			continue
+		}
+
+		if switchName == port {
+			continue
+		}
+
+		if port == "49152" || peer == "MMM-MAV" {
+			continue
+		}
+
+		key := switchName + "|" + port + "|" + peer
+		if seen[key] {
+			continue
+		}
+		seen[key] = true
+
 		link := model.Link{
-			Switch: row[0],
-			Port:   row[1],
-			Peer:   row[2],
+			Switch: switchName,
+			Port:   port,
+			Peer:   peer,
 		}
 
 		links = append(links, link)
