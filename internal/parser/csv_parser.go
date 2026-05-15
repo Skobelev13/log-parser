@@ -29,15 +29,9 @@ func ParseCSV(path string) ([]model.Link, error) {
 			continue
 		}
 
-		if row[0] == "NodeGUID" || row[0] == "NodeGuid" {
-			continue
-		}
-
-		if row[0] == row[1] {
-			continue
-		}
-
-		if row[1] == "49152" || row[2] == "MMM-MAV" {
+		if row[0] == "NodeGUID" ||
+			row[0] == "NodeGuid" ||
+			row[0] == "NodeDesc" {
 			continue
 		}
 

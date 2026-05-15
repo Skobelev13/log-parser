@@ -6,6 +6,7 @@ import (
 
 	"log-parser/internal/parser"
 	"log-parser/internal/storage"
+	"log-parser/internal/topology"
 )
 
 var linkRepo *storage.LinkRepository
@@ -15,9 +16,21 @@ func Init(repo *storage.LinkRepository) {
 }
 
 func ParseHandler(w http.ResponseWriter, r *http.Request) {
+	links, err := parser.ParseCSV("data/ibdiagnet2.db_csv")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	err = linkRepo.SaveLinks(links)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
 	response := map[string]interface{}{
-		"status": "accepted",
-		"path":   "data/test.log",
+		"status": "saved",
+		"count":  len(links),
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -56,4 +69,17 @@ func GetLinksHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(links)
+}
+
+func GetTopologyHandler(w http.ResponseWriter, r *http.Request) {
+	links, err := linkRepo.GetLinks()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	topo := topology.Build(links)
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(topo)
 }

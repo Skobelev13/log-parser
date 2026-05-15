@@ -37,7 +37,7 @@ func main() {
 	http.HandleFunc("/api/v1/parse", api.ParseHandler)
 	http.HandleFunc("/api/v1/csv", api.ParseCSVHandler)
 	http.HandleFunc("/api/v1/links", api.GetLinksHandler)
-
+	http.HandleFunc("/api/v1/topology", api.GetTopologyHandler)
 	log.Printf("server started on :%s", port)
 
 	err = http.ListenAndServe(":"+port, nil)
